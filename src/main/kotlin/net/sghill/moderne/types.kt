@@ -5,14 +5,6 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-interface Clock<T> {
-    fun now(): T
-}
-
-object UnixTimestampClock : Clock<Long> {
-    override fun now() = System.currentTimeMillis()
-}
-
 data class PluginGroupSpec(
     val name: String,
     val pluginIds: Set<String>,
@@ -26,35 +18,18 @@ data class PluginGroup(
     val name: String,
     val description: String,
     val repositories: Set<GitHubRepository>,
-    val updatedAt: Long
-) {
-
-    val count: Int
-        get() = repositories.size
-
-    val selected: Int
-        get() = repositories.size
-
-    val organization: Int
-        get() = 0
-
-    val priority: Int
-        get() = 0
-}
+    val count: Int = repositories.size,
+)
 
 @Serializable
 data class GitHubRepository @OptIn(ExperimentalSerializationApi::class) constructor(
     val branch: String,
     val path: String,
-    val name: String,
-    val organization: String,
     @EncodeDefault
     @SerialName("__typename")
     val typeName: String = GitHubRepository::class.java.simpleName,
     @EncodeDefault
     val origin: String = "github.com",
-    @EncodeDefault
-    val id: String = listOf(typeName, origin, path, branch).joinToString("~~"),
 )
 
 interface RepositoryLookup {
@@ -87,12 +62,12 @@ sealed interface PluginResult {
     data class Missing(val id: String) : PluginResult
 }
 
-class GroupsFactory(private val lookup: RepositoryLookup, private val clock: Clock<Long> = UnixTimestampClock) {
+class GroupsFactory(private val lookup: RepositoryLookup) {
     fun create(spec: PluginGroupSpec): PluginGroupResult {
         val results = spec.pluginIds.map { lookup.byId(it) }
         val missing = results.filterIsInstance<PluginResult.Missing>().toSet()
         val repositories = results.filterIsInstance<PluginResult.Ok>().map { it.repository }.toSet()
-        val group = PluginGroup(spec.name, spec.description, repositories, clock.now())
+        val group = PluginGroup(spec.name, spec.description, repositories)
         return PluginGroupResult(group, missing)
     }
 }

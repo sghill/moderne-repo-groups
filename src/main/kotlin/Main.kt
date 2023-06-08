@@ -9,7 +9,6 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.encodeToStream
 import net.sghill.moderne.GroupsFactory
 import net.sghill.moderne.PluginGroupSpec
-import net.sghill.moderne.UnixTimestampClock
 import net.sghill.moderne.UpdateCenter
 import net.sghill.moderne.UpdateCenterRepositoryLookup
 import java.nio.file.Files
@@ -28,7 +27,7 @@ suspend fun main() {
         }
     }.use { client ->
         val updateCenter: UpdateCenter = client.get("https://updates.jenkins.io/current/update-center.actual.json").body()
-        val factory = GroupsFactory(UpdateCenterRepositoryLookup(updateCenter), UnixTimestampClock)
+        val factory = GroupsFactory(UpdateCenterRepositoryLookup(updateCenter))
         val plugins = Files.readAllLines(Paths.get(System.getenv("PLUGINS_INPUT_FILE"))).map { it.trim() }.filterNot { it.isBlank() }.toSet()
         if (plugins.isEmpty()) {
             println("No plugins found. Please define PLUGINS_INPUT_FILE to a file with one plugin id per line")
