@@ -13,12 +13,16 @@ import net.sghill.moderne.UpdateCenter
 import net.sghill.moderne.UpdateCenterRepositoryLookup
 import java.nio.file.Files
 import java.nio.file.Paths
-import java.nio.file.StandardOpenOption
+import java.nio.file.StandardOpenOption.CREATE
+import java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
 import kotlin.io.path.outputStream
-import kotlin.system.exitProcess
 
 @OptIn(ExperimentalSerializationApi::class)
 suspend fun main() {
+    val plugins = Files.readAllLines(Paths.get(System.getenv("PLUGINS_INPUT_FILE"))).map { it.trim() }.filterNot { it.isBlank() }.toSet()
+    if (plugins.isEmpty()) {
+        throw IllegalStateException("No plugins found. Please define PLUGINS_INPUT_FILE to a file with one plugin id per line")
+    }
     HttpClient(CIO) {
         install(ContentNegotiation) {
             json(Json {
@@ -28,11 +32,6 @@ suspend fun main() {
     }.use { client ->
         val updateCenter: UpdateCenter = client.get("https://updates.jenkins.io/current/update-center.actual.json").body()
         val factory = GroupsFactory(UpdateCenterRepositoryLookup(updateCenter))
-        val plugins = Files.readAllLines(Paths.get(System.getenv("PLUGINS_INPUT_FILE"))).map { it.trim() }.filterNot { it.isBlank() }.toSet()
-        if (plugins.isEmpty()) {
-            println("No plugins found. Please define PLUGINS_INPUT_FILE to a file with one plugin id per line")
-            exitProcess(1)
-        }
         val result = factory.create(PluginGroupSpec("my-plugins", plugins, "plugins from work"))
 
         if (result.missing.isNotEmpty()) {
@@ -43,7 +42,7 @@ suspend fun main() {
         }
 
         val json = Json { encodeDefaults = true }
-        Files.createFile(Paths.get("out.json")).outputStream(StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING).use {
+        Files.createFile(Paths.get("out.json")).outputStream(CREATE, TRUNCATE_EXISTING).use {
             json.encodeToStream(result.pluginGroup, it)
         }
     }
