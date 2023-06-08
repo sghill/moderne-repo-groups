@@ -4,8 +4,6 @@ import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 
 interface Clock<T> {
     fun now(): T
@@ -96,12 +94,6 @@ class GroupsFactory(private val lookup: RepositoryLookup, private val clock: Clo
         val repositories = results.filterIsInstance<PluginResult.Ok>().map { it.repository }.toSet()
         val group = PluginGroup(spec.name, spec.description, repositories, clock.now())
         return PluginGroupResult(group, missing)
-    }
-}
-
-class GroupsSerializer(private val clock: Clock<Long>) {
-    fun serialize(): String {
-        return Json.encodeToString(mapOf("updatedAt" to clock.now()))
     }
 }
 
