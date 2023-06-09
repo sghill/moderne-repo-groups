@@ -42,7 +42,11 @@ suspend fun main() {
         }
 
         val json = Json { encodeDefaults = true }
-        Files.createFile(Paths.get("out.json")).outputStream(CREATE, TRUNCATE_EXISTING).use {
+        val output = Paths.get("out.json")
+        if (Files.notExists(output)) {
+            Files.createFile(output)
+        }
+        output.outputStream(CREATE, TRUNCATE_EXISTING).use {
             json.encodeToStream(result.pluginGroup, it)
         }
     }
