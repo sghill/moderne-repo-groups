@@ -49,8 +49,6 @@ class UpdateCenterRepositoryLookup(private val updateCenter: UpdateCenter) : Rep
                 GitHubRepository(
                     branch,
                     path,
-                    path.substringAfterLast("/"),
-                    path.substringBeforeLast("/")
                 )
             )
         }
